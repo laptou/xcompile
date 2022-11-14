@@ -12,8 +12,6 @@
 # download-all extract-all build-all" and get a working cross compiler in about
 # 10 minutes
 
-set export
-
 GLIBC_VERSION := "2.31"
 BINUTILS_VERSION := "2.39"
 LINUX_SERIES := "5.x"
@@ -51,13 +49,13 @@ GCC_OPTS_FULL := GCC_OPTS_BASE + " " + GCC_OPTS_EXT + " " + DEPS_PATH_OPTS
 GLIBC_CPPFLAGS := "-mfloat-abi=hard -mfpu=vfp3 -march=armv7-a"
 GLIBC_S1_OPTS := "--disable-multilib --disable-nls --disable-werror libc_cv_forced_unwind=yes"
 
-PATH_EXT := if os() == 'macos' { 
-  (`brew --prefix gnu-sed` / "libexec/gnubin") + ":" +
-  (`brew --prefix bison` / "bin") + ":" +
-  (`brew --prefix flex` / "bin")
+PATH_EXT := (PREFIX / "bin") + (if os() == 'macos' { 
+  ":" + (`brew --prefix gnu-sed` / "libexec/gnubin")  +
+  ":" + (`brew --prefix bison` / "bin") +
+  ":" + (`brew --prefix flex` / "bin")
 } else {
   ""
-}
+})
 
 # at the time of writing, the version of make available from homebrew was 4.4
 # and this version of make seemed to have issues that made it not work properly
@@ -84,7 +82,7 @@ build-all: build-binutils build-headers build-gcc build-glibc-s1 build-libgcc bu
 
 build-binutils:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
+  export PATH="{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd {{SRCDIR}}/binutils-{{BINUTILS_VERSION}}
   mkdir -p build
@@ -96,14 +94,14 @@ build-binutils:
 build-headers:
   #!/usr/bin/env bash
   set -euxo pipefail
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
+  export PATH="{{PATH_EXT}}:$PATH"
   cd {{SRCDIR}}/linux-{{LINUX_VERSION}}
   {{MAKE}} ARCH={{TARGET_LINUX}} INSTALL_HDR_PATH={{PREFIX_INNER}} headers_install
 
 build-gcc:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   set -euxo pipefail
+  export PATH="{{PATH_EXT}}:$PATH"
   cd {{SRCDIR}}/gcc-{{GCC_VERSION}}
   mkdir -p build
   cd build
@@ -113,7 +111,7 @@ build-gcc:
 
 build-glibc-s1:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
+  export PATH="{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd {{SRCDIR}}/glibc-{{GLIBC_VERSION}}
   mkdir -p build
@@ -128,7 +126,7 @@ build-glibc-s1:
 
 build-libgcc:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
+  export PATH="{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd {{SRCDIR}}/gcc-{{GCC_VERSION}}/build
   {{MAKE}} -j all-target-libgcc
@@ -136,7 +134,7 @@ build-libgcc:
 
 build-glibc-s2:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
+  export PATH="{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd {{SRCDIR}}/glibc-{{GLIBC_VERSION}}/build
   {{MAKE}} -j
