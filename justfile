@@ -1,6 +1,8 @@
 #!/usr/bin/env -S just --justfile
 # Ibiyemi's cross-compiling Justfile, (c) 14 Nov 2022
-# This is intended to work on macOS and Linux (tested on macOS 13 Ventura and Manjaro)
+
+# This is intended to create a working armv7l cross compiler that is suitable for generating binaries that will run on a Raspberry Pi.
+# Tested on macOS 13 Ventura and Manjaro
 
 # brew dependencies: remake libmpc mpfr isl gmp flex bison gawk
 # apt dependencies: libmpfr-dev libmpc-dev libgmp-dev autotools-dev autoconf file rsync flex bison binutils gawk gcc g++ make python3
@@ -29,11 +31,12 @@ MPFR_PATH := if os() == 'macos' { `brew --prefix mpfr` } else { '' }
 MPC_PATH := if os() == 'macos' { `brew --prefix libmpc` } else { '' }
 
 BINUTILS_OPTS := "--disable-nls --disable-multilib"
-DEPS_PATH_OPTS := 
-  (if ISL_PATH != "" { '--with-isl="' + ISL_PATH + '"' } else { '' }) +
-  (if MPC_PATH != "" { '--with-mpc="' + MPC_PATH + '"' } else { '' }) +
-  (if MPFR_PATH != "" { '--with-mpfr="' + MPFR_PATH + '"' } else { '' }) +
+DEPS_PATH_OPTS := (
+  (if ISL_PATH != "" { '--with-isl="' + ISL_PATH + '"' } else { '' }) + 
+  (if MPC_PATH != "" { '--with-mpc="' + MPC_PATH + '"' } else { '' }) + 
+  (if MPFR_PATH != "" { '--with-mpfr="' + MPFR_PATH + '"' } else { '' }) + 
   (if GMP_PATH != "" { '--with-gmp="' + GMP_PATH + '"' } else { '' })
+)
 BINUTILS_OPTS_FULL := BINUTILS_OPTS + " " + DEPS_PATH_OPTS
 
 GCC_OPTS_BASE := "--enable-languages=c,c++ --disable-multilib --disable-nls"
@@ -46,7 +49,7 @@ GLIBC_S1_OPTS := "--disable-multilib --disable-nls --disable-werror libc_cv_forc
 PATH_EXT := if os() == 'macos' { 
   (`brew --prefix gnu-sed` / "libexec/gnubin") + ":" +
   (`brew --prefix bison` / "bin") + ":" +
-  (`brew --prefix flex` / "bin") + ":"
+  (`brew --prefix flex` / "bin")
 } else {
   ""
 }
@@ -67,10 +70,6 @@ nuke:
 
 clean:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
   set -uxo pipefail
   rm -r {{PWD}}/binutils-{{BINUTILS_VERSION}}/build
   rm -r {{PWD}}/gcc-{{GCC_VERSION}}/build
@@ -80,10 +79,7 @@ build-all: build-binutils build-headers build-gcc build-glibc-s1 build-libgcc bu
 
 build-binutils:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd binutils-{{BINUTILS_VERSION}}
   mkdir -p build
@@ -95,19 +91,13 @@ build-binutils:
 build-headers:
   #!/usr/bin/env bash
   set -euxo pipefail
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   cd linux-{{LINUX_VERSION}}
   {{MAKE}} ARCH={{TARGET_LINUX}} INSTALL_HDR_PATH={{PREFIX_INNER}} headers_install
 
 build-gcc:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   cd gcc-{{GCC_VERSION}}
   set -euxo pipefail
   mkdir -p build
@@ -118,10 +108,7 @@ build-gcc:
 
 build-glibc-s1:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   set -euxo pipefail
   cd glibc-{{GLIBC_VERSION}}
   mkdir -p build
@@ -136,10 +123,7 @@ build-glibc-s1:
 
 build-libgcc:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   cd gcc-{{GCC_VERSION}}/build
   set -euxo pipefail
   {{MAKE}} -j all-target-libgcc
@@ -147,10 +131,7 @@ build-libgcc:
 
 build-glibc-s2:
   #!/usr/bin/env bash
-  export PATH="{{PREFIX}}/bin:$PATH"
-  export PATH="{{SED_PATH}}:$PATH"
-  export PATH="{{BISON_PATH}}:$PATH"
-  export PATH="{{FLEX_PATH}}:$PATH"
+  export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   cd glibc-{{GLIBC_VERSION}}/build
   set -euxo pipefail
   {{MAKE}} -j
