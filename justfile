@@ -12,6 +12,9 @@
 # download-all extract-all build-all" and get a working cross compiler in about
 # 10 minutes
 
+# if you want to compile 64-bit binaries for raspberry pi 4, then run this with
+# just TARGET_GCC=aarch64-linux-gnu TARGET_LINUX=arm64 build-all
+
 GLIBC_VERSION := "2.31"
 BINUTILS_VERSION := "2.39"
 LINUX_SERIES := "5.x"
