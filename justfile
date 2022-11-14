@@ -37,10 +37,10 @@ MPC_PATH := if os() == 'macos' { `brew --prefix libmpc` } else { '' }
 
 BINUTILS_OPTS := "--disable-nls --disable-multilib"
 DEPS_PATH_OPTS := (
-  (if ISL_PATH != "" { '--with-isl="' + ISL_PATH + '"' } else { '' }) + 
-  (if MPC_PATH != "" { '--with-mpc="' + MPC_PATH + '"' } else { '' }) + 
-  (if MPFR_PATH != "" { '--with-mpfr="' + MPFR_PATH + '"' } else { '' }) + 
-  (if GMP_PATH != "" { '--with-gmp="' + GMP_PATH + '"' } else { '' })
+  (if ISL_PATH != "" { '--with-isl="' + ISL_PATH + '" ' } else { '' }) + 
+  (if MPC_PATH != "" { '--with-mpc="' + MPC_PATH + '" ' } else { '' }) + 
+  (if MPFR_PATH != "" { '--with-mpfr="' + MPFR_PATH + '" ' } else { '' }) + 
+  (if GMP_PATH != "" { '--with-gmp="' + GMP_PATH + '" ' } else { '' })
 )
 BINUTILS_OPTS_FULL := BINUTILS_OPTS + " " + DEPS_PATH_OPTS
 
