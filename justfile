@@ -8,6 +8,10 @@
 # apt dependencies: libmpfr-dev libmpc-dev libgmp-dev autotools-dev autoconf file rsync flex bison binutils gawk gcc g++ make python3
 # pacman dependencies: gmp libisl mpfr 
 
+# if everything is set up as intended you should be able to run "just
+# download-all extract-all build-all" and get a working cross compiler in about
+# 10 minutes
+
 set export
 
 GLIBC_VERSION := "2.31"
@@ -23,7 +27,8 @@ TARGET_GCC := "armv7l-linux-gnueabihf"
 TARGET_LINUX := "arm"
 
 PWD := `pwd`
-PREFIX := `pwd` / 'opt/cross'
+SRCDIR := PWD / 'src'
+PREFIX := PWD / 'opt/cross'
 PREFIX_INNER := PREFIX / TARGET_GCC
 GMP_PATH := if os() == 'macos' { `brew --prefix gmp` } else { '' }
 ISL_PATH := if os() == 'macos' { `brew --prefix isl` } else { '' }
@@ -71,9 +76,9 @@ nuke:
 clean:
   #!/usr/bin/env bash
   set -uxo pipefail
-  rm -r {{PWD}}/binutils-{{BINUTILS_VERSION}}/build
-  rm -r {{PWD}}/gcc-{{GCC_VERSION}}/build
-  rm -r {{PWD}}/glibc-{{GLIBC_VERSION}}/build
+  rm -r {{SRCDIR}}/binutils-{{BINUTILS_VERSION}}/build
+  rm -r {{SRCDIR}}/gcc-{{GCC_VERSION}}/build
+  rm -r {{SRCDIR}}/glibc-{{GLIBC_VERSION}}/build
 
 build-all: build-binutils build-headers build-gcc build-glibc-s1 build-libgcc build-glibc-s2
 
@@ -81,7 +86,7 @@ build-binutils:
   #!/usr/bin/env bash
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   set -euxo pipefail
-  cd binutils-{{BINUTILS_VERSION}}
+  cd {{SRCDIR}}/binutils-{{BINUTILS_VERSION}}
   mkdir -p build
   cd build
   ../configure --prefix={{PREFIX}} --target={{TARGET_GCC}} {{BINUTILS_OPTS_FULL}}
@@ -92,14 +97,14 @@ build-headers:
   #!/usr/bin/env bash
   set -euxo pipefail
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
-  cd linux-{{LINUX_VERSION}}
+  cd {{SRCDIR}}/linux-{{LINUX_VERSION}}
   {{MAKE}} ARCH={{TARGET_LINUX}} INSTALL_HDR_PATH={{PREFIX_INNER}} headers_install
 
 build-gcc:
   #!/usr/bin/env bash
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
-  cd gcc-{{GCC_VERSION}}
   set -euxo pipefail
+  cd {{SRCDIR}}/gcc-{{GCC_VERSION}}
   mkdir -p build
   cd build
   ../configure --prefix={{PREFIX}} --target={{TARGET_GCC}} --with-headers={{PREFIX_INNER}}/include {{GCC_OPTS_FULL}}
@@ -110,7 +115,7 @@ build-glibc-s1:
   #!/usr/bin/env bash
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
   set -euxo pipefail
-  cd glibc-{{GLIBC_VERSION}}
+  cd {{SRCDIR}}/glibc-{{GLIBC_VERSION}}
   mkdir -p build
   cd build
   export CPPFLAGS="{{GLIBC_CPPFLAGS}}"
@@ -124,44 +129,44 @@ build-glibc-s1:
 build-libgcc:
   #!/usr/bin/env bash
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
-  cd gcc-{{GCC_VERSION}}/build
   set -euxo pipefail
+  cd {{SRCDIR}}/gcc-{{GCC_VERSION}}/build
   {{MAKE}} -j all-target-libgcc
   {{MAKE}} install-target-libgcc
 
 build-glibc-s2:
   #!/usr/bin/env bash
   export PATH="{{PREFIX}}/bin:{{PATH_EXT}}:$PATH"
-  cd glibc-{{GLIBC_VERSION}}/build
   set -euxo pipefail
+  cd {{SRCDIR}}/glibc-{{GLIBC_VERSION}}/build
   {{MAKE}} -j
   {{MAKE}} install
 
 extract-all: extract-binutils extract-headers extract-gcc extract-glibc
 
 extract-gcc:
-  tar -xf gcc-{{GCC_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && tar -xf gcc-{{GCC_VERSION}}.tar.xz
 
 extract-binutils:
-  tar -xf binutils-{{BINUTILS_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && tar -xf binutils-{{BINUTILS_VERSION}}.tar.xz
 
 extract-headers:
-  tar -xf linux-{{LINUX_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && tar -xf linux-{{LINUX_VERSION}}.tar.xz
 
 extract-glibc:
-  tar -xf glibc-{{GLIBC_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && tar -xf glibc-{{GLIBC_VERSION}}.tar.xz
 
 download-all: download-gcc download-binutils download-glibc download-headers
 
 download-glibc:
-  curl -f -O https://ftp.gnu.org/gnu/glibc/glibc-{{GLIBC_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && curl -f -O https://ftp.gnu.org/gnu/glibc/glibc-{{GLIBC_VERSION}}.tar.xz
 
 download-headers:
-  curl -f -O https://mirrors.edge.kernel.org/pub/linux/kernel/v{{LINUX_SERIES}}/linux-{{LINUX_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && curl -f -O https://mirrors.edge.kernel.org/pub/linux/kernel/v{{LINUX_SERIES}}/linux-{{LINUX_VERSION}}.tar.xz
 
 download-gcc:
-  curl -f -O https://gcc.gnu.org/pub/gcc/releases/gcc-{{GCC_VERSION}}/gcc-{{GCC_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && curl -f -O https://gcc.gnu.org/pub/gcc/releases/gcc-{{GCC_VERSION}}/gcc-{{GCC_VERSION}}.tar.xz
   
 download-binutils:
-  curl -f -O https://ftp.gnu.org/gnu/binutils/binutils-{{BINUTILS_VERSION}}.tar.xz
+  mkdir -p {{SRCDIR}} && cd {{SRCDIR}} && curl -f -O https://ftp.gnu.org/gnu/binutils/binutils-{{BINUTILS_VERSION}}.tar.xz
 
